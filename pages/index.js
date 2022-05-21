@@ -2,6 +2,7 @@
 
 import React, { Fragment } from "react";
 import MeetUpList from "../components/meetups/MeetupList";
+import { MongoClient } from "mongodb";
 
 function HomePage(props) {
   return <MeetUpList meetups={props.meetups} />;
@@ -24,7 +25,6 @@ function HomePage(props) {
 //   };
 // }
 
-
 //getStaticProps:
 // excecuted during pre-rendering process
 // allowed to be used synchronously
@@ -36,31 +36,32 @@ function HomePage(props) {
 export async function getStaticProps() {
   //fetch data from an API, a database, or any other source
 
+  //pass: PlWvg3ZxJ7KSoKpf
+  const client = await MongoClient.connect(
+    "mongodb+srv://murtaza:PlWvg3ZxJ7KSoKpf@event-tracker.ej6dc.mongodb.net/?retryWrites=true&w=majority"
+  );
+  const db = client.db();
+
+  const meetupsCollection = db.collection("meetups");
+
+  const meetups = await meetupsCollection.find().toArray();
+
+  client.close();
+
   return {
     props: {
-      meetups: DUMMY_DATA,
+      meetups: meetups.map((meetup) => ({
+        title: meetup.title,
+        address: meetup.address,
+        image: meetup.image,
+        description: meetup.description,
+        id: meetup._id.toString(),
+      })),
     },
     //in case that data is changed, this function will be called again
     //the number is a timestamp in seconds to regenerate the page
-    revalidate: 10,
+    revalidate: 1,
   };
 }
 
 export default HomePage;
-
-const DUMMY_DATA = [
-  {
-    id: 1,
-    title: "Meetup at Taksim",
-    address: "Taksim/Istanbul",
-    image:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Istanbul_Tram_%282%29.jpg/1024px-Istanbul_Tram_%282%29.jpg",
-  },
-  {
-    id: 2,
-    title: "Meetup for Maiden's Tower",
-    adress: "Uskudar/Istanbul",
-    image:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Istanbul_Tram_%282%29.jpg/1024px-Istanbul_Tram_%282%29.jpg",
-  },
-];

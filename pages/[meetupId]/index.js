@@ -1,12 +1,12 @@
 import React from "react";
 import { useRouter } from "next/router";
 import MeetupDetail from "../../components/meetups/MeetupDetail";
+import { MongoClient, ObjectId } from "mongodb";
 
 function MeetupDetails(props) {
   const router = useRouter();
   const { meetupId } = router.query;
 
-  console.log(router.query);
   return (
     <MeetupDetail
       image={props.meetupData.image}
@@ -17,33 +17,56 @@ function MeetupDetails(props) {
   );
 }
 
-
 export async function getStaticPaths() {
   //fetch data/id from the api
+  const client = await MongoClient.connect(
+    "mongodb+srv://murtaza:PlWvg3ZxJ7KSoKpf@event-tracker.ej6dc.mongodb.net/?retryWrites=true&w=majority"
+  );
+  const db = client.db();
+
+  const meetupsCollection = db.collection("meetups");
+
+  const meetups = await meetupsCollection.find({}, { _id: 1 }).toArray();
+
+  client.close();
+
   return {
-    paths: [
-      { params: {meetupId: "1"} },
-      { params: {meetupId: "2"} },
-    ],
+    paths: meetups.map((meetup) => ({
+      params: {
+        meetupId: meetup._id.toString(),
+      },
+    })),
     fallback: false,
   };
 }
 
 export async function getStaticProps(context) {
   //fetch data for a single meetup
-  const meetupId = context.params
+  const meetupId = context.params.meetupId;
 
-  console.log("onGetStaticProps: ",meetupId);
+  const client = await MongoClient.connect(
+    "mongodb+srv://murtaza:PlWvg3ZxJ7KSoKpf@event-tracker.ej6dc.mongodb.net/?retryWrites=true&w=majority"
+  );
+  const db = client.db();
+
+  const meetupsCollection = db.collection("meetups");
+
+  const selectedMeetup = await meetupsCollection.findOne({
+    _id: ObjectId(meetupId),
+  });
+
+  console.log("selectedMeetup: ", selectedMeetup);
+
+  client.close();
 
   return {
     props: {
       meetupData: {
-        id: meetupId,
-        image:
-          "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Istanbul_Tram_%282%29.jpg/1024px-Istanbul_Tram_%282%29.jpg",
-        title: "Meetup at Taksim",
-        description: "Meetup at Taksim",
-        address: "Taksim/Istanbul",
+        id: selectedMeetup._id.toString(),
+        title: selectedMeetup.title,
+        address: selectedMeetup.address,
+        image: selectedMeetup.image,
+        description: selectedMeetup.description,
       },
     },
   };

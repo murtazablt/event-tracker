@@ -1,11 +1,27 @@
-//the code in here will be triggered whenever a request sent to here
-// api/new-meetup
+import { MongoClient } from "mongodb";
 
-function handler(req, res) {
+// /api/new-meetup
+// POST /api/new-meetup
+
+async function handler(req, res) {
   if (req.method === "POST") {
     const data = req.body;
 
-    const { title, image, address, description } = data;
+    //pass: PlWvg3ZxJ7KSoKpf
+    const client = await MongoClient.connect(
+      "mongodb+srv://murtaza:PlWvg3ZxJ7KSoKpf@event-tracker.ej6dc.mongodb.net/?retryWrites=true&w=majority"
+    );
+    const db = client.db();
+
+    const meetupsCollection = db.collection("meetups");
+
+    const result = await meetupsCollection.insertOne(data);
+
+    console.log(result);
+
+    client.close();
+
+    res.status(201).json({ message: "Meetup inserted!" });
   }
 }
 
